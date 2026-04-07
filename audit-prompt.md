@@ -122,9 +122,18 @@ Output a structured report with these sections in order:
 2. **Executive Summary**: Grade (letter + numeric), files scanned, total tokens (+ % of 200K window), instruction count (+ % actionable), estimated savings
 3. **Context Budget Breakdown**: Table with columns `Source | Tokens | % of Window` — rows for system prompt (~15K), CLAUDE.md, MCP schemas, memory, rules, available-for-work
 4. **Dimension Scores**: Table with columns `Dimension | Score | Grade | Key Issue`
-5. **Findings**: Grouped by severity (CRITICAL / WARNING / INFO). Each finding: ID, title, location (file:lines), evidence (quoted), impact, fix (before/after with token counts)
+5. **Findings**: Grouped by severity (CRITICAL / WARNING / INFO). Each finding MUST use this exact format:
+
+   **[C/W/I-NNN]**: [concise title]
+   - **Severity**: CRITICAL | WARNING | INFO
+   - **Location**: `file:line` (or `pasted input:line` if no file path)
+   - **Evidence**: > [exact quoted text from the original]
+   - **Proposed**: [replacement text or "delete"]
+   - **Impact**: [one sentence — what improves]
+
 6. **Adversarial Review**: Only if Phase 5 ran
 7. **Proposed Optimized CLAUDE.md**: From Phase 6
+8. **End of report** — no editorial commentary, no subjective assessments, no "bottom line" summaries. Report ends with the optimized CLAUDE.md.
 
 ---
 
@@ -136,11 +145,9 @@ Detect available external reviewers:
 echo "=== ADVERSARIAL AGENTS ==="
 command -v codex &>/dev/null && echo "CODEX_AVAILABLE=true" || echo "CODEX_AVAILABLE=false"
 command -v gemini &>/dev/null && echo "GEMINI_AVAILABLE=true" || echo "GEMINI_AVAILABLE=false"
-[ -n "$OPENAI_API_KEY" ] && echo "OPENAI_KEY=set" || echo "OPENAI_KEY=missing"
-[ -n "$GEMINI_API_KEY" -o -n "$GOOGLE_API_KEY" ] && echo "GEMINI_KEY=set" || echo "GEMINI_KEY=missing"
 ```
 
-If at least one external agent is available and authenticated, proceed with adversarial review. If none are available, skip this phase and note it in the report.
+If at least one CLI is available, attempt the adversarial review. If it fails due to authentication, note it in the report and continue. Do not gate on API key environment variables — CLIs may authenticate via OAuth or other methods.
 
 ### Adversarial Protocol
 
@@ -202,10 +209,13 @@ Rewrite rules:
 5. **Positive framing**: `Use ES modules` not `Don't use CommonJS`
 6. **Move domain-specific rules** to `.claude/rules/[domain].md` with `paths:` frontmatter — suggest this as an additional optimization if the file is large
 7. **Keep it under 120 lines** for the main CLAUDE.md; under 60 is ideal
+8. **No editorializing**: output only the optimized file, no commentary before or after it
+9. **Severity-ordered application**: apply CRITICAL fixes first, then WARNING, then INFO
+10. **Preserve structure**: keep the user's heading hierarchy and section order where possible
 
 Output the complete optimized CLAUDE.md with before/after token and line counts, reduction percentages, and any suggested `.claude/rules/` extractions with `paths:` frontmatter.
 
----
+After the optimized output, end with: `Review the [N] findings above. You can apply the optimized version, cherry-pick specific finding IDs, or keep your current file.`
 
 ---
 
