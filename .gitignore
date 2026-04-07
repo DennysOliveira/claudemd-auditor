@@ -1,0 +1,16 @@
+# Local working docs (expansion plans, drafts, personal notes)
+.local/
+
+# Claude Code session data
+.claude/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
